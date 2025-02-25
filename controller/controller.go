@@ -2,12 +2,21 @@ package main
 import (
 	"fmt"
 	"log"
+	"context"
 	
-	"minibidder/db"
+	"github.com/sahilsp22/mini-bidder/db"
+	"github.com/sahilsp22/mini-bidder/db/config"
 )
 
 func main() {
-	pg,err := db.NewClient()
+
+	cfg,err := config.GetPGConfig()
+	if err!=nil {
+		log.Fatal(err)
+	}
+	fmt.Println(cfg)
+
+	pg,err := db.NewClient(&cfg)
 	if err!=nil {
 		log.Fatal(err)
 	}
@@ -17,14 +26,19 @@ func main() {
 		log.Fatal(err)
 	}
 	for rows.Next() {
-		var id int
+		var yr string
 		var name string
-		err = rows.Scan(&id, &name)
+		err = rows.Scan(&name, &yr)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(id, name)
+		fmt.Println(yr, name)
 	}	
+
+	if err = rows.Err(); err != nil {
+        log.Fatal(err)
+    }
+	defer rows.Close()
 	defer pg.Close()
 	return
 }
