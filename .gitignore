@@ -1,0 +1,7 @@
+# Sensitive Information
+*.env
+*.conf
+*secrets*.yaml
+
+# IDE and Editor Files
+.vscode/
