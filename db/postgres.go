@@ -14,7 +14,7 @@ type PgClient struct{
 	cl *pgxpool.Pool
 }
 
-func NewClient(*cfg config.Config) (*PgClient, error) {
+func NewClient(cfg *config.Config) (*PgClient, error) {
 	conf,err := pgxpool.ParseConfig(fmt.Sprintf("postgres://%s:%s@%s:%s/%s",cfg.User,cfg.Password,cfg.Host,cfg.Port,cfg.DB))
 
 	if err!=nil {

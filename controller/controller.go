@@ -16,7 +16,7 @@ func main() {
 	}
 	fmt.Println(cfg)
 
-	pg,err := db.NewClient(&cfg)
+	pg,err := db.NewClient(cfg)
 	if err!=nil {
 		log.Fatal(err)
 	}

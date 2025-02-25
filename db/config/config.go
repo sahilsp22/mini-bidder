@@ -16,7 +16,7 @@ type Config struct {
 
 func GetPGConfig() (*Config,error) {
 
-	err := godotenv.Load("./db.env")
+	err := godotenv.Load("/Users/sahilpatil/mini-bidder/db/config/db.env")
     if err != nil {
         return nil, fmt.Errorf("error loading .env file: %v", err)
 	}
