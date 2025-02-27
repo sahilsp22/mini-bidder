@@ -29,7 +29,7 @@ spec:
           value: /var/lib/postgresql/data/pgdata
         volumeMounts:
         - name: postgres-pv-storage
-          mountPath: /var/lib/postgresql/data
+          mountPath: /data
         - name: postgres-config
           mountPath: /etc/postgresql/postgresql.conf
           subPath: postgresql.conf

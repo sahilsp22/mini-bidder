@@ -49,7 +49,42 @@ func (mc *MCacheClient) Set(key string, value interface{}) error {
 	return nil
 }
 
-func (mc *MCacheClient) Get(key string) (interface{},error) {
+func (mc *MCacheClient) Get(key string,s interface{}) (error) {
+	item, err := mc.cl.Get(key)
+	if err != nil {
+		mclog.Print(err)
+		if err == memcache.ErrCacheMiss {
+			return fmt.Errorf("%v - key not found: %v", err,key)
+		}
+		if err == memcache.ErrMalformedKey {
+			return fmt.Errorf("%v - malformed key: %v", err,key)
+		}
+		return fmt.Errorf("%v - error getting key: %v", err,key)
+	}
+	// fmt.Println(string(item.Value))
+	// var crtv config.Creative
+	err = json.Unmarshal(item.Value, &s)
+	if err!=nil {
+		return fmt.Errorf("error unmarshalling value: %v", err)
+	}
+	return nil
+}
+
+func (mc *MCacheClient) Close() error{
+	err := mc.cl.Close()
+	if err!=nil {
+		return fmt.Errorf("Client closed with error: %v", err)
+	}
+	return nil
+}
+func GetMcInstance() *MCacheClient {
+	return McInstance
+}
+
+
+
+// not generic function
+func (mc *MCacheClient) NGet(key string) (interface{},error) {
 	item, err := mc.cl.Get(key)
 	if err != nil {
 		mclog.Print(err)
@@ -68,15 +103,4 @@ func (mc *MCacheClient) Get(key string) (interface{},error) {
 		return nil,fmt.Errorf("error unmarshalling value: %v", err)
 	}
 	return crtv,nil
-}
-
-func (mc *MCacheClient) Close() error{
-	err := mc.cl.Close()
-	if err!=nil {
-		return fmt.Errorf("Client closed with error: %v", err)
-	}
-	return nil
-}
-func GetMcInstance() *MCacheClient {
-	return McInstance
 }

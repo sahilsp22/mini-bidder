@@ -1,8 +1,10 @@
 package main
 import (
 	"fmt"
-	// "log"
 	"context"
+	"time"
+	"sync"
+	// "log"
 	// "os"
 	
 	"github.com/sahilsp22/mini-bidder/db"
@@ -13,6 +15,9 @@ import (
 func main() {
 
 	cntlog := logger.InitLogger(logger.CONTROLLER)
+
+	wg := sync.WaitGroup{}
+	defer wg.Wait()
 
 	cfg,err := config.GetPGConfig()
 	if err!=nil {
@@ -37,35 +42,71 @@ func main() {
 		cntlog.Fatal(err)
 	}
 	// fmt.Println(pg)
+
+	updateTicker := time.NewTicker(time.Second * config.CACHE_UPDATE_INTERVAL)
+
+	wg.Add(1)
+	go func() {
+		for range updateTicker.C {
+			start:=time.Now()
+			updateCreatives()
+			cntlog.Printf("Updated Creatives in %v",time.Since(start).Milliseconds())
+		}
+		defer wg.Done()
+		defer updateTicker.Stop()
+	}()
+
+	go func() {
+		for range updateTicker.C {
+			start:=time.Now()
+			updateAdvertisers()
+			cntlog.Printf("Updated Advertiser Budgets in %v",time.Since(start).Milliseconds())
+		}
+		defer wg.Done()
+		defer updateTicker.Stop()
+	}()
+
+	wg.Wait()
+	defer pg.Close()
+
+	return
+}
+
+func updateCreatives() {
 	rows,err := pg.Query(context.Background(), "SELECT * FROM Creative_Details;")
 	if err!=nil {
-		cntlog.Fatal(err)
+		logger.GetLogger(logger.CONTROLLER).Fatal(err)
 	}
 	var Creatives []config.Creative
 	for rows.Next() {
 		var crtv config.Creative
 		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails)
 		if err != nil {
-			cntlog.Fatal(err)
+			logger.GetLogger(logger.CONTROLLER).Fatal(err)
 		}
-		fmt.Println(crtv)
+		// fmt.Println(crtv)
 		Creatives = append(Creatives,crtv)
 	}	
-	rows.Close()
-
-	for _,crtv := range Creatives {
-		mc.Set(crtv.AdID,crtv)
-	}
-
 	if err = rows.Err(); err != nil {
-        cntlog.Fatal(err)
-    }
+		logger.GetLogger(logger.CONTROLLER).Fatal(err)
+	}
+	rows.Close()
+	
+	for _,crtv := range Creatives {
+		err:=mc.Set(crtv.AdID,crtv)
+		if err!=nil{
+			cntlog.Print(err)
+		}
+	}
+	
+	// var crtv config.Creative
+	// err = mc.Get("adtest3",&crtv)
+	// if err!=nil{
+	// 	logger.GetLogger(logger.CONTROLLER).Print(err)
+	// }
+	// fmt.Println(crtv)
+}
 
-	crtv,err := mc.Get("adtest1")
-	fmt.Println(crtv)
-
-	defer pg.Close()
-
-
-	return
+func updateAdvertisers() {
+	
 }
