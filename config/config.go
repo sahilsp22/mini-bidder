@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	CACHE_TIMEOUT = 20
+	CACHE_TIMEOUT = 15
 	CACHE_UPDATE_INTERVAL = 10
 )
 
@@ -30,6 +30,13 @@ type Creative struct {
 	Width 			string 	`json:"Width"`
 	AdType 			string 	`json:"AdType"`
 	CreativeDetails string	`json:"CreativeDetails"`
+}
+
+type Budget struct {
+	AdvID 		string 	`json:"AdvID"`
+	Budget 		int 	`json:"totalBudget"`
+	CPM 		int 	`json:"cpm"`
+	RemBudget 	float64 `json:"remBudget"`
 }
 
 func GetPGConfig() (*Postgres,error) {
@@ -59,14 +66,3 @@ func GetMcCConfig() (*Memcache,error) {
 		Port: os.Getenv("MC_PORT"),
 	},nil
 }
-
-var query string = `CREATE_DB=create database test;
-\c test
-create user sp with password 1234;
-grant all on schema public to sp;
-create table t1(name varchar(26),age int);
-insert into t1 values('sp',21),('ab',22);`
-// create table Creative_Details(adid varchar(20),height int, width int,adtype int,crtv_details varchar(20));
-// insert into Creative_Details values('adtest1',100,100,1,'addetails'),insert into Creative_Details values('adtest2',100,50,2,'addetails');
-// insert into Budget values('adtest1',1000,2,0),('adtest2',10000,10,0),('adtest3',1000,5,0),('adtest4',5000,6,0);
-// create table Budget(AdvID varchar(20),totalBudget int,cpm int,remBudget numeric(10,3));

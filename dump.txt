@@ -1,0 +1,66 @@
+func InitDB(){
+	
+	conf,err := pgxpool.ParseConfig(fmt.Sprintf("postgres://postgres:password@192.168.64.2:30336/postgres"))
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return 
+	}
+	cl, err := pgxpool.NewWithConfig(context.Background(), conf)
+	if err != nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return 
+	}
+
+	_,err = cl.Exec(context.Background(), `DROP DATABASE IF EXISTS test;`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = cl.Exec(context.Background(), `CREATE DATABASE test;`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = cl.Exec(context.Background(), `CREATE ROLE sp SUPERUSER LOGIN PASSWORD '1234';`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = cl.Exec(context.Background(), `GRANT ALL ON SCHEMA public TO sp;`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = cl.Exec(context.Background(), `GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sp;`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+
+	tcl,err:=pgx.Connect(context.Background(), "postgres://sp:1234@192.168.64.2:30336/test")
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = tcl.Exec(context.Background(), `CREATE TABLE Creative_Details(adid varchar(20),height int, width int,adtype int,crtv_details varchar(20));`)
+	if err!=nil {
+		fmt.Println(err)
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	_,err = tcl.Exec(context.Background(), `INSERT INTO Creative_Details values('adtest1',100,100,1,'addetails'),('adtest2',100,50,2,'addetails');`)
+	if err!=nil {
+		pglog.Fatalf(fmt.Sprintf("Error Initialising DB: %s",err))
+		return
+	}
+	defer cl.Close()
+	defer tcl.Close(context.Background())
+}
+
+
+var query string = `CREATE_DB=create database test;
+\c test
+create user sp with password 1234;
+grant all on schema public to sp;
+create table t1(name varchar(26),age int);
+insert into t1 values('sp',21),('ab',22);`

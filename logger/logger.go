@@ -46,3 +46,7 @@ func (l *Logger) Fatal(v ...interface{}) {
 func (l *Logger) Fatalf(format string, v ...interface{}) {
 	l.lg.Fatalf(format, v...)
 }
+
+func (l *Logger) Printf(format string, v ...interface{}) {
+	l.lg.Printf(format, v...)
+}
