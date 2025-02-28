@@ -30,14 +30,14 @@ INSERT INTO Creative_Details VALUES
 CREATE TABLE Budget(
     AdvID varchar(20),
     totalBudget int,
-    cpm int,
+    cpm numeric(3,0),
     remBudget numeric(10,3)
 );
 INSERT INTO Budget VALUES
-('adtest1',1000,5,1000),
-('adtest2',10000,10,10000),
-('adtest3',5000,6,5000),
-('adtest4',4000,10,4000);
+('advtest1',1000,5,1000),
+('advtest2',10000,10,10000),
+('advtest3',5000,6,5000),
+('advtest4',4000,10,4000);
 EOF
 )
 

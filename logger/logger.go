@@ -21,8 +21,8 @@ var loggerInstance *Logger
 
 func InitLogger(pref string) *Logger {
 	lg := log.New(os.Stdout, "mini-bidder: "+pref+":", log.LstdFlags)
-	loggerInstance = &Logger{lg:lg}
-	return loggerInstance
+	// loggerInstance = &Logger{lg:lg}
+	return &Logger{lg:lg}
 }
 
 func GetLoggerInstance(pref string) *Logger {

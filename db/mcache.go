@@ -3,17 +3,20 @@ package db
 import (
 	"fmt"
 	"encoding/json"
+	// "sync"
 	// "log"
 	// "context"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/sahilsp22/mini-bidder/config"
 	"github.com/sahilsp22/mini-bidder/logger"
+	// "github.com/sahilsp22/mini-bidder/utils"
 )
 
 
 type MCacheClient struct{
 	cl *memcache.Client
+	// mu sync.RWMutex
 }
 
 var McInstance *MCacheClient
@@ -26,8 +29,9 @@ func init() {
 func NewMcClient(cfg *config.Memcache) (*MCacheClient, error) {
 	mc := memcache.New(fmt.Sprintf("%s:%s",cfg.Host,cfg.Port))
 	mclog.Print("Connected to Memcache")
-	McInstance = &MCacheClient{cl:mc}
-	return McInstance,nil
+	// McInstance = &MCacheClient{cl:mc}
+	// return McInstance,nil
+	return &MCacheClient{cl:mc},nil
 }
 
 func (mc *MCacheClient) Set(key string, value interface{}) error {
@@ -77,30 +81,52 @@ func (mc *MCacheClient) Close() error{
 	}
 	return nil
 }
+
+// func (mc *MCacheClient) Lock() {
+// 	mc.mu.Lock()
+// }
+// func (mc *MCacheClient) Unlock() {
+// 	mc.mu.Unlock()
+// }
+
+// func (mc *MCacheClient) RLock() {	
+// 	mc.mu.RLock()
+// }
+// func (mc *MCacheClient) RUnlock() {
+// 	mc.mu.RUnlock()
+// }
+
 func GetMcInstance() *MCacheClient {
+	if McInstance == nil {
+		// mclog.Fatal("Memcache not initialized")
+		mc := memcache.New("localhost:11211")
+		mclog.Print("Connected to Memcache")
+		McInstance = &MCacheClient{cl:mc}
+	}
 	return McInstance
+
 }
 
 
 
 // not generic function
-func (mc *MCacheClient) NGet(key string) (interface{},error) {
-	item, err := mc.cl.Get(key)
-	if err != nil {
-		mclog.Print(err)
-		if err == memcache.ErrCacheMiss {
-			return nil,fmt.Errorf("key not found: %v", err)
-		}
-		if err == memcache.ErrMalformedKey {
-			return nil,fmt.Errorf("malformed key: %v", err)
-		}
-		return nil,fmt.Errorf("error getting key: %v", err)
-	}
-	fmt.Println(string(item.Value))
-	var crtv config.Creative
-	err = json.Unmarshal(item.Value, &crtv)
-	if err!=nil {
-		return nil,fmt.Errorf("error unmarshalling value: %v", err)
-	}
-	return crtv,nil
-}
+// func (mc *MCacheClient) NGet(key string) (interface{},error) {
+// 	item, err := mc.cl.Get(key)
+// 	if err != nil {
+// 		mclog.Print(err)
+// 		if err == memcache.ErrCacheMiss {
+// 			return nil,fmt.Errorf("key not found: %v", err)
+// 		}
+// 		if err == memcache.ErrMalformedKey {
+// 			return nil,fmt.Errorf("malformed key: %v", err)
+// 		}
+// 		return nil,fmt.Errorf("error getting key: %v", err)
+// 	}
+// 	fmt.Println(string(item.Value))
+// 	// var crtv controller.Creative
+// 	err = json.Unmarshal(item.Value, &crtv)
+// 	if err!=nil {
+// 		return nil,fmt.Errorf("error unmarshalling value: %v", err)
+// 	}
+// 	return crtv,nil
+// }

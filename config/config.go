@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	CACHE_TIMEOUT = 15
+	CACHE_TIMEOUT = 11
 	CACHE_UPDATE_INTERVAL = 10
 )
 
@@ -22,21 +22,6 @@ type Postgres struct {
 type Memcache struct {
 	Host string
 	Port string
-}
-
-type Creative struct {
-	AdID 			string 	`json:"AdID"`
-	Height  		string 	`json:"Height"`
-	Width 			string 	`json:"Width"`
-	AdType 			string 	`json:"AdType"`
-	CreativeDetails string	`json:"CreativeDetails"`
-}
-
-type Budget struct {
-	AdvID 		string 	`json:"AdvID"`
-	Budget 		int 	`json:"totalBudget"`
-	CPM 		int 	`json:"cpm"`
-	RemBudget 	float64 `json:"remBudget"`
 }
 
 func GetPGConfig() (*Postgres,error) {
