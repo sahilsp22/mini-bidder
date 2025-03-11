@@ -9,6 +9,9 @@ import (
 const (
 	CACHE_TIMEOUT = 11
 	CACHE_UPDATE_INTERVAL = 10
+
+	BIDDER_SERVER_PORT = 3333
+	METRICS_SERVER_PORT = 8080
 )
 
 type Postgres struct {

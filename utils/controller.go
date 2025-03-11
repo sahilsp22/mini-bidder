@@ -160,7 +160,7 @@ func (c *Controller) UpdateAdvBudget(AdvID string) (error) {
 
     query := `
         UPDATE Budget 
-        SET RemBudget = RemBudget - CPM
+        SET RemBudget = RemBudget - CPM/1000
         WHERE AdvID = $1;
     `
     err := c.pg.Exec(context.Background(), query, AdvID)

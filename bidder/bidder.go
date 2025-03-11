@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
-	"time"
+	// "fmt"
+	// "time"
 	// "context"
 	// "log"
 	// "os"
@@ -10,7 +10,10 @@ import (
 	"github.com/sahilsp22/mini-bidder/db"
 	"github.com/sahilsp22/mini-bidder/config"
 	"github.com/sahilsp22/mini-bidder/logger"
-	"github.com/sahilsp22/mini-bidder/utils"
+	// "github.com/sahilsp22/mini-bidder/utils"
+	"github.com/sahilsp22/mini-bidder/server"
+	"github.com/sahilsp22/mini-bidder/bid"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -39,36 +42,59 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	// for  {
-		// fmt.Println(mc)
-		// mc.Lock()
-		var bd utils.Budget
-		err = mc.Get("advtest1",&bd)
-		if err!=nil {
-			logger.Print(err)
-		} else {
-			fmt.Println(bd)
-		}
-		// mc.Unlock()
-		// }
-		
-	cntrl,err := utils.NewController(pg,mc)
-	err=cntrl.UpdateAdvBudget("advtest1")
-	if err!= nil {
-		logger.Print(err)
-	}
-	time.Sleep(10*time.Second)
+	m := bid.NewMatcher()
 
-	var b utils.Budget
-	err = mc.Get("advtest1",&b)
-	if err!=nil {
-		logger.Print(err)
-	} else {
-		fmt.Println(b)
+	srvr := server.Server{}
+	metricsrv := server.Server{}
+
+	routes := []server.Route{
+		{
+			Path: "/bid",
+			Handler: m.Handler,
+		},
 	}
+
+	metricroutes := []server.Route{
+		{
+			Path: "/metrics",
+			Handler: promhttp.Handler(),
+		},
+	}
+
+	srvr.AddRoutes(routes)
+	metricsrv.AddRoutes(metricroutes)
+
+	go func(){
+		metricsrv.Listen(config.METRICS_SERVER_PORT)
+	}()
+
+	srvr.Listen(config.BIDDER_SERVER_PORT)
 
 	defer mc.Close()
 	defer pg.Close()
 
 	return
 }
+
+// var bd utils.Budget
+// err = mc.Get("advtest1",&bd)
+// if err!=nil {
+// 	logger.Print(err)
+// } else {
+// 	fmt.Println(bd)
+// }
+	
+// cntrl,err := utils.NewController(pg,mc)
+// err=cntrl.UpdateAdvBudget("advtest1")
+// if err!= nil {
+// 	logger.Print(err)
+// }
+// time.Sleep(10*time.Second)
+
+// var b utils.Budget
+// err = mc.Get("advtest1",&b)
+// if err!=nil {
+// 	logger.Print(err)
+// } else {
+// 	fmt.Println(b)
+// }
