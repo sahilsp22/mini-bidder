@@ -13,7 +13,6 @@ import (
 	// "github.com/sahilsp22/mini-bidder/utils"
 	"github.com/sahilsp22/mini-bidder/server"
 	"github.com/sahilsp22/mini-bidder/bid"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -57,7 +56,7 @@ func main() {
 	metricroutes := []server.Route{
 		{
 			Path: "/metrics",
-			Handler: promhttp.Handler(),
+			Handler: m.Metrics().ServeHTTP,
 		},
 	}
 
