@@ -20,8 +20,9 @@ type Logger struct {
 var loggerInstance *Logger
 
 func InitLogger(pref string) *Logger {
-	lg := log.New(os.Stdout, "mini-bidder: "+pref+":", log.LstdFlags)
+	lg := log.New(os.Stdout, pref+": ", log.LstdFlags)
 	// loggerInstance = &Logger{lg:lg}
+	// "mini-bidder: "+
 	return &Logger{lg:lg}
 }
 
@@ -29,7 +30,7 @@ func GetLoggerInstance(pref string) *Logger {
 	if loggerInstance == nil {
 		loggerInstance = InitLogger(pref)
 	} else {
-		loggerInstance.lg.SetPrefix("mini-bidder: "+pref+": ")
+		loggerInstance.lg.SetPrefix(pref+":\t")
 	}
 	
 	return loggerInstance

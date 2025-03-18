@@ -2,26 +2,39 @@ package bid
 
 import(
 	// "encoding/json"
+	"fmt"
 )
 
 type BidRequest struct {
-	Id string `json:"id"`
-	Imps *[]Impression `json:"imps"`
+	ID string `json:"id"`
+	Imps []*Impression `json:"imps"`
 	At int `json:"at,omitempty"`
-	Site *Site `json:"site,omitempty"`
-	Device *Device `json:"device",omitempty`
+
+	// Site Detials
+	SiteID string
+	Domain string
+	PublisherID string
+	PublisherName string
+
+	// Device Details
+	DeviceType int
+	Country string
+	Region string
+	UserID string
 }
 
 type Impression struct{
-	Id string `json:"id"`
-	TagId string `json"tagid",omitempty`
-	Secure string `json:"secure",omitempty`
-	Banner *Banner `json:"banner",omitempty`
+	ID string `json:"id"`
+	TagID string `json"tagid",omitempty`
+	Secure int `json:"secure",omitempty`
+	MediaType string 
+	W int
+	H int
 }
 
-type Banner struct{
-	W int32 `json:"w"`
-	H int32 `json:"h"`
+type Media struct{
+	W int `json:"w"`
+	H int `json:"h"`
 }
 
 type Site struct{
@@ -48,4 +61,16 @@ type Geo struct{
 
 type User struct{
 	Id string `json:"id",omitempty`
+}
+
+func (br *BidRequest) validate() error {
+	if br.ID == "" {
+		return fmt.Errorf("Bid request ID is nil")
+	}
+
+	if len(br.Imps)==0 {
+		return fmt.Errorf("No Impressions in Bid request")
+	}
+
+	return nil
 }

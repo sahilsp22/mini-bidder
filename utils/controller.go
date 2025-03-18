@@ -18,6 +18,7 @@ type Creative struct {
 	Width 			string 	`json:"Width"`
 	AdType 			string 	`json:"AdType"`
 	CreativeDetails string	`json:"CreativeDetails"`
+	AdvertiserID    string
 }
 
 type Budget struct {
@@ -30,7 +31,10 @@ type Budget struct {
 type Controller struct {
 	pg *db.PgClient
 	mc *db.MCacheClient
+
 }
+
+var controller *Controller
 
 func NewController(pg *db.PgClient, mc *db.MCacheClient) (*Controller,error) {
 	return &Controller{pg:pg,mc:mc},nil
@@ -89,7 +93,7 @@ func (c *Controller) updateCreatives() error{
 	var Creatives []Creative
 	for rows.Next() {
 		var crtv Creative
-		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails)
+		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails, &crtv.AdvertiserID)
 		if err != nil {
 			return fmt.Errorf("Error scanning Creative rows: %v",err)
 		}
@@ -156,7 +160,7 @@ func (c *Controller) updateAdvertisers() error {
 }
 
 func (c *Controller) UpdateAdvBudget(AdvID string) (error) {
-	fmt.Println("updating....")
+	// fmt.Println("updating....")
 
     query := `
         UPDATE Budget 

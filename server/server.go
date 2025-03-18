@@ -41,9 +41,9 @@ func (s *Server) Listen(port int){
 		Handler: s.handler,
 	}
 
+	srvlog.Printf("Server running on port : %v",port)
 	err:= s.srvr.ListenAndServe()
 	if err!=nil || err == http.ErrServerClosed{
 		srvlog.Fatal("Error starting server :",err)
 	}
-	srvlog.Printf("Server running on port :%s",port)
 }

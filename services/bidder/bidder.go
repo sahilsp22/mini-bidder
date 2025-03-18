@@ -10,7 +10,7 @@ import (
 	"github.com/sahilsp22/mini-bidder/db"
 	"github.com/sahilsp22/mini-bidder/config"
 	"github.com/sahilsp22/mini-bidder/logger"
-	// "github.com/sahilsp22/mini-bidder/utils"
+	"github.com/sahilsp22/mini-bidder/utils"
 	"github.com/sahilsp22/mini-bidder/server"
 	"github.com/sahilsp22/mini-bidder/bid"
 )
@@ -41,7 +41,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	m := bid.NewMatcher()
+	cntrlClient,err := utils.NewController(pg,mc)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	m := bid.NewMatcher(pg,mc,cntrlClient,logger)
 
 	srvr := server.Server{}
 	metricsrv := server.Server{}
@@ -65,9 +69,11 @@ func main() {
 
 	go func(){
 		metricsrv.Listen(config.METRICS_SERVER_PORT)
-	}()
-
+		// logger.Print("Metrics server listening on port : ",8080)
+		}()
+		
 	srvr.Listen(config.BIDDER_SERVER_PORT)
+	// logger.Print("Bid server listening on port : ",3333)
 
 	defer mc.Close()
 	defer pg.Close()
