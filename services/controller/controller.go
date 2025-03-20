@@ -39,7 +39,7 @@ func main() {
 	}
 	// fmt.Println(pg)
 
-	controller,err := utils.NewController(pg,mc)
+	controller,err := utils.NewController(pg,mc,cntlog)
 	if err!=nil {
 		cntlog.Fatal(err)
 	}

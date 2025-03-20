@@ -16,8 +16,9 @@ import (
 
 type MCacheClient struct{
 	cl *memcache.Client
-	// mu sync.RWMutex
 }
+
+// var mu sync.RWMutex
 
 var McInstance *MCacheClient
 
@@ -83,29 +84,29 @@ func (mc *MCacheClient) Close() error{
 }
 
 // func (mc *MCacheClient) Lock() {
-// 	mc.mu.Lock()
+// 	mu.Lock()
 // }
 // func (mc *MCacheClient) Unlock() {
-// 	mc.mu.Unlock()
+// 	mu.Unlock()
 // }
 
 // func (mc *MCacheClient) RLock() {	
-// 	mc.mu.RLock()
+// 	mu.RLock()
 // }
 // func (mc *MCacheClient) RUnlock() {
-// 	mc.mu.RUnlock()
+// 	mu.RUnlock()
 // }
 
-func GetMcInstance() *MCacheClient {
-	if McInstance == nil {
-		// mclog.Fatal("Memcache not initialized")
-		mc := memcache.New("localhost:11211")
-		mclog.Print("Connected to Memcache")
-		McInstance = &MCacheClient{cl:mc}
-	}
-	return McInstance
+// func GetMcInstance() *MCacheClient {
+// 	if McInstance == nil {
+// 		// mclog.Fatal("Memcache not initialized")
+// 		mc := memcache.New("localhost:11211")
+// 		mclog.Print("Connected to Memcache")
+// 		McInstance = &MCacheClient{cl:mc}
+// 	}
+// 	return McInstance
 
-}
+// }
 
 
 

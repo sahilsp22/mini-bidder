@@ -2,6 +2,7 @@
 *.env
 *.conf
 *secrets*.yaml
+query.go
 
 # IDE and Editor Files
 .vscode/

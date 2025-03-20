@@ -31,18 +31,40 @@ type Budget struct {
 type Controller struct {
 	pg *db.PgClient
 	mc *db.MCacheClient
-
+	logger *logger.Logger
 }
 
-var controller *Controller
 
-func NewController(pg *db.PgClient, mc *db.MCacheClient) (*Controller,error) {
-	return &Controller{pg:pg,mc:mc},nil
+var (
+	// controller *Controller
+	crtvLock *sync.Mutex
+	bdgtLock *sync.RWMutex
+)
+
+func init() {
+	crtvLock = &sync.Mutex{}
+	bdgtLock = &sync.RWMutex{}
 }
+
+func NewController(pg *db.PgClient, mc *db.MCacheClient, logger *logger.Logger) (*Controller,error) {
+
+	controller := &Controller{
+		pg:pg,
+		mc:mc,
+		logger:logger,
+	}
+
+	return controller,nil
+}
+
+// func GetControllerInstance() *Controller {
+// 	fmt.Println(controller)
+// 	return controller
+// }
 
 func (c *Controller) Start() {
 
-	logger:=logger.InitLogger(logger.CONTROLLER)
+	// logger:=logger.InitLogger(logger.CONTROLLER)
 
 	wg := sync.WaitGroup{}
 	defer wg.Wait()
@@ -56,10 +78,10 @@ func (c *Controller) Start() {
 			start:=time.Now()
 			err:=c.updateCreatives()
 			if err!=nil {
-				logger.Print("Error updating Creatives: ",err)
+				c.logger.Print("Error updating Creatives: ",err)
 				continue
 			}
-			logger.Print("Updated Creatives in: ",time.Since(start).Milliseconds())
+			c.logger.Print("Updated Creatives in: ",time.Since(start).Milliseconds())
 		}
 		wg.Done()
 		updateCrtvTicker.Stop()
@@ -71,10 +93,10 @@ func (c *Controller) Start() {
 			start:=time.Now()
 			err:=c.updateAdvertisers()
 			if err!=nil {
-				logger.Print("Error updating Budgets: ",err)
+				c.logger.Print("Error updating Budgets: ",err)
 				continue
 			}
-			logger.Print("Updated Budgets in: ",time.Since(start).Milliseconds())
+			c.logger.Print("Updated Budgets in: ",time.Since(start).Milliseconds())
 		}
 		wg.Done()
 		updateBudgetTicker.Stop()
@@ -86,11 +108,11 @@ func (c *Controller) Start() {
 }
 
 func (c *Controller) updateCreatives() error{
-	rows,err := c.pg.Query(context.Background(), "SELECT * FROM Creative_Details;")
+	rows,err := c.pg.Query(context.Background(), ALL_CREATIVES_QUERY)
 	if err!=nil {
 		return fmt.Errorf("Error reading creatives: %v",err)
 	}
-	var Creatives []Creative
+	var Creatives []*Creative
 	for rows.Next() {
 		var crtv Creative
 		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails, &crtv.AdvertiserID)
@@ -98,21 +120,21 @@ func (c *Controller) updateCreatives() error{
 			return fmt.Errorf("Error scanning Creative rows: %v",err)
 		}
 		// fmt.Println(crtv)
-		Creatives = append(Creatives,crtv)
+		Creatives = append(Creatives,&crtv)
 	}	
 	if err = rows.Err(); err != nil {
 		return fmt.Errorf("Error scanning Creative rows: %v",err)
 	}
 	rows.Close()
 	
-	// c.mc.Lock()
-	// defer c.mc.Unlock()
+	crtvLock.Lock()
 	for _,crtv := range Creatives {
 		err:=c.mc.Set(crtv.AdID,crtv)
 		if err!=nil{
 			return err
 		}
 	}
+	crtvLock.Unlock()
 	return nil
 	// var crtv config.Creative
 	// err = mc.Get("adtest3",&crtv)
@@ -123,11 +145,16 @@ func (c *Controller) updateCreatives() error{
 }
 
 func (c *Controller) updateAdvertisers() error {
-	rows,err := c.pg.Query(context.Background(), "SELECT * FROM Budget;")
+
+	bdgtLock.RLock()
+	rows,err := c.pg.Query(context.Background(), ALL_BUDGET_QUERY)
+	bdgtLock.RUnlock()
+
 	if err!=nil {
 		return fmt.Errorf("Error scanning Budget rows: %v",err)
 	}
-	var Budgets []Budget
+
+	var Budgets []*Budget
 	for rows.Next() {
 		var bdgt Budget
 		err = rows.Scan(&bdgt.AdvID, &bdgt.Budget, &bdgt.CPM, &bdgt.RemBudget)
@@ -135,21 +162,22 @@ func (c *Controller) updateAdvertisers() error {
 			return fmt.Errorf("Error scanning Budget rows: %v",err)
 		}
 		// fmt.Println(bdgt)
-		Budgets = append(Budgets,bdgt)
+		Budgets = append(Budgets,&bdgt)
 	}
 	if err = rows.Err(); err != nil {
 		return fmt.Errorf("Error scanning Budget rows: %v",err)
 	}
 	rows.Close()
 	
-	// c.mc.Lock()
-	// defer c.mc.Unlock()
+	bdgtLock.Lock()
+	defer bdgtLock.Unlock()
 	for _,budget := range Budgets {
 		err:=c.mc.Set(budget.AdvID,budget)
 		if err!=nil{
 			return err
 		}
 	}
+
 	// var b Budget
 	// err = c.mc.Get("advtest1",&b)
 	// if err!=nil{
@@ -161,16 +189,28 @@ func (c *Controller) updateAdvertisers() error {
 
 func (c *Controller) UpdateAdvBudget(AdvID string) (error) {
 	// fmt.Println("updating....")
-
-    query := `
-        UPDATE Budget 
-        SET RemBudget = RemBudget - CPM/1000
-        WHERE AdvID = $1;
-    `
+	bdgtLock.Lock()
+	defer bdgtLock.Unlock()
+    query := UPDATE_ADV_BUDGET_QUERY
     err := c.pg.Exec(context.Background(), query, AdvID)
 	if err!=nil {
 		return fmt.Errorf("Error updating Budget: AdvID: %v : %v",AdvID,err)
 	}
-	// c.updateAdvertisers()
+	
+	go func() error {
+		err:=c.updateAdvertisers()
+		if err!=nil {
+			return err
+		}
+		// fmt.Println("Updated Budget for Adv")
+		return nil
+	}()
 	return nil
+}
+
+func CreativeLock() {
+	crtvLock.Lock()
+}
+func CreativeUnLock() {
+	crtvLock.Unlock()
 }

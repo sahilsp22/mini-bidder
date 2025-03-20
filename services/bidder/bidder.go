@@ -10,7 +10,7 @@ import (
 	"github.com/sahilsp22/mini-bidder/db"
 	"github.com/sahilsp22/mini-bidder/config"
 	"github.com/sahilsp22/mini-bidder/logger"
-	"github.com/sahilsp22/mini-bidder/utils"
+	// "github.com/sahilsp22/mini-bidder/utils"
 	"github.com/sahilsp22/mini-bidder/server"
 	"github.com/sahilsp22/mini-bidder/bid"
 )
@@ -41,11 +41,11 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	cntrlClient,err := utils.NewController(pg,mc)
-	if err != nil {
-		logger.Fatal(err)
-	}
-	m := bid.NewMatcher(pg,mc,cntrlClient,logger)
+	// cntrlClient,err := utils.NewController(pg,mc)
+	// if err != nil {
+	// 	logger.Fatal(err)
+	// }
+	m := bid.NewMatcher(pg,mc,logger)
 
 	srvr := server.Server{}
 	metricsrv := server.Server{}
