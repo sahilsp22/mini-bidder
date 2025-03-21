@@ -19,6 +19,7 @@ type Logger struct {
 
 var loggerInstance *Logger
 
+// Returns logger instance
 func InitLogger(pref string) *Logger {
 	lg := log.New(os.Stdout, pref+": ", log.LstdFlags)
 	// loggerInstance = &Logger{lg:lg}

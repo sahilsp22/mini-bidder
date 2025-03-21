@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	CACHE_TIMEOUT = 11
-	CACHE_UPDATE_INTERVAL = 10
+	CACHE_TIMEOUT = 11				// Cache timeout interval
+	CACHE_UPDATE_INTERVAL = 10		// Cache update interval
 
-	BIDDER_SERVER_PORT = 3333
-	METRICS_SERVER_PORT = 8080
+	BIDDER_SERVER_PORT = 3333		// Port for Bidder
+	METRICS_SERVER_PORT = 8080		// Port for Prometheus Metrics
 )
 
 type Postgres struct {
@@ -27,6 +27,7 @@ type Memcache struct {
 	Port string
 }
 
+// Returns postgres configs from environment
 func GetPGConfig() (*Postgres,error) {
 
 	err := godotenv.Load("/Users/sahilpatil/mini-bidder/config/db.env")
@@ -43,6 +44,7 @@ func GetPGConfig() (*Postgres,error) {
 	},nil
 }
 
+// Returns Mcache configs from environment
 func GetMcCConfig() (*Memcache,error) {
 	err := godotenv.Load("/Users/sahilpatil/mini-bidder/config/db.env")
 	if err != nil {

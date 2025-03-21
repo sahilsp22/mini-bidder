@@ -11,9 +11,9 @@ import (
 	"context"
 	"strconv"
 
-	// "github.com/sahilsp22/mini-bidder/logger"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/sahilsp22/mini-bidder/metrics"
 	"github.com/sahilsp22/mini-bidder/db"
 	"github.com/sahilsp22/mini-bidder/utils"
@@ -21,10 +21,13 @@ import (
 
 )
 
+// Matcher is responsible for handling Bid request and sending appropriate response
 type Matcher struct{
 	pg 			*db.PgClient
 	mc 			*db.MCacheClient
 	logger 		*logger.Logger
+
+	// prometheus metrics and registry
 	reg 		*prometheus.Registry
 	bidreqs 	metrics.Counter
 	bidresp 	metrics.Counter
@@ -33,23 +36,27 @@ type Matcher struct{
 
 var jsonpool = &fastjson.ParserPool{}
 
+// Returns a matcher object
 func NewMatcher(pg *db.PgClient, mc *db.MCacheClient, logger *logger.Logger) *Matcher {
 
 	reg := prometheus.NewRegistry()
-	brq := metrics.NewCounter(metrics.Opts{
+	// counts total bid requests recieved
+	brq := metrics.NewCounter(metrics.Opts{        
 		Name: "bid_requests_recieved",
 		Help: "The total number of bid requests recieved",
 	})
-
+	
+	// counts total bid responses sent zero and non-zero both
 	brsp := metrics.NewCounter(metrics.Opts{
 		Name: "bid_responses_sent",
 		Help: "The total number of bid responses sent",
 	})
-
+	
+	// counts total bid responses sent per advertiser
 	bpadv := metrics.NewCounterVec(metrics.Opts{
 		Name: "bid_response_per_advertiser",
 		Help: "Total bid responses sent per advertiser",
-	},[]string{"advid"})
+	},[]string{"advertiserID"})
 	
 	reg.MustRegister(brq)
 	reg.MustRegister(brsp)
@@ -65,11 +72,14 @@ func NewMatcher(pg *db.PgClient, mc *db.MCacheClient, logger *logger.Logger) *Ma
 	}
 }
 
+// Handler for incoming Bid request
 func (m *Matcher) Handler(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("Recieved request on: ",r.URL)
 	m.bidreqs.Inc()
 	// fmt.Println(r.Header)
 	// fmt.Println("Request:\n",r)
+
+	// Responsible for parsing bid request
 	br,err := m.NewBidRequest(r)
 	if err!=nil {
 		m.WriteNoBidResponse(w,br,2)
@@ -77,11 +87,18 @@ func (m *Matcher) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = br.validate()
+	if err != nil {
+		m.WriteNoBidResponse(w,br,2)
+		m.logger.Print(err,", Sent No Bid response")
+		return
+	}
+
 	res := m.EvaluateBidRequest(w,br)
 	if res==nil {
 		return
 	}
 	
+	// return 0 bid if no seatbids
 	if res.SeatBid == nil {
 		w.WriteHeader(http.StatusNoContent)
 		m.logger.Print("No matching creatives, Sent No Content Response")
@@ -96,6 +113,7 @@ func (m *Matcher) Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// update budget and metrics
 	go func(*BidResponse){
 		m.updateBudget(*res)
 		m.updateMetrics(*res)
@@ -108,6 +126,7 @@ func (m *Matcher) Handler(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+// Parse the bid request and reurn a BidRequest object
 func(m *Matcher) NewBidRequest(r *http.Request) (*BidRequest,error) {
 	body,err := io.ReadAll(r.Body)
 	if err!=nil {
@@ -134,7 +153,7 @@ func(m *Matcher) NewBidRequest(r *http.Request) (*BidRequest,error) {
 		user *fastjson.Value
 	)
 	
-	id = v.Get("id").String()
+	id = string(v.GetStringBytes("id"))
 	at = v.GetInt("at")
 	site = v.Get("site")
 	device = v.Get("device")
@@ -153,10 +172,12 @@ func(m *Matcher) NewBidRequest(r *http.Request) (*BidRequest,error) {
 		imp = &Impression{}
 		var media *fastjson.Value
 		var mediaType string
-		impid,err := strconv.Unquote(raw.Get("id").String())
-		if err!=nil {
+		// impid,err := strconv.Unquote(raw.Get("id").String())
+		// if err!=nil {
 			
-		}
+		// }
+		impid := string(raw.GetStringBytes("id"))
+
 		imp.ID = impid
 		imp.TagID = raw.Get("tagid").String()
 		imp.Secure = raw.GetInt("secure")
@@ -181,34 +202,45 @@ func(m *Matcher) NewBidRequest(r *http.Request) (*BidRequest,error) {
 		br.Imps[i]=imp
 	}
 
-	brid,err := strconv.Unquote(id)
-	if err!=nil {
+	br.ID = id
 
-	}
-	br.ID = brid
 	if at == 0 {
 		at = 2
 	}
 	br.At = at
 
-	br.SiteID = site.Get("id").String()
-	br.Domain = site.Get("domain").String()
-	br.PublisherID = publisher.Get("id").String()
-	br.PublisherName = publisher.Get("name").String()
+	if site != nil {
+		br.SiteID = string(site.GetStringBytes("id"))
+		br.Domain = string(site.GetStringBytes("domain"))
+	}
+	
+	if publisher != nil {
+		br.PublisherID = string(publisher.GetStringBytes("id"))
+		br.PublisherName = string(publisher.GetStringBytes("name"))
+	}
 
-	br.DeviceType = device.GetInt("id")
-	br.Country = geo.Get("country").String()
-	br.Region = geo.Get("region").String()
-	br.UserID = user.Get("id").String()
+	if device != nil {
+		br.DeviceType = device.GetInt("id")
+	}
+
+	if geo != nil {
+		br.Country = string(geo.GetStringBytes("country"))
+		br.Region = string(geo.GetStringBytes("region"))
+	}
+
+	if user != nil {
+		br.UserID = string(user.GetStringBytes("id"))
+	}
 
 	return br,nil
 }
 
+// Evalutes bid request to find matching bids
 func (m *Matcher) EvaluateBidRequest(w http.ResponseWriter, br *BidRequest) *BidResponse {
-	if br.Imps == nil {
-		m.WriteNoBidResponse(w,br,2)
-		return nil
-	}
+	// if br.Imps == nil {
+	// 	m.WriteNoBidResponse(w,br,2)
+	// 	return nil
+	// }
 
 	creatives,err := m.GetAllCreatives()
 	if err!=nil {
@@ -226,26 +258,36 @@ func (m *Matcher) EvaluateBidRequest(w http.ResponseWriter, br *BidRequest) *Bid
 		price:=0.0
 		var seat string
 		for _,crtv := range creatives {
+
 			crH,err := strconv.Atoi(crtv.Height)
+			if err!=nil {
+				continue
+			}
 			crW,err := strconv.Atoi(crtv.Width)
 			if err!=nil {
 				continue
 			}
-			if imp.MediaType == crtv.AdType && imp.W == crW && imp.H == crH {
 
+			// Matching impression to creatives
+			if imp.MediaType == crtv.AdType && imp.W == crW && imp.H == crH {
+				// skip if no advertiser found
 				budget,ok := budgetMap[crtv.AdvertiserID]
 				if !ok {
 					continue
 				}
-
-				cpm,err :=strconv.ParseFloat(budget.CPM,64)
+				// skip if theres is no budget
 				rem,err :=strconv.ParseFloat(budget.RemBudget,64)
-				if err!=nil {
+				if err!=nil || rem==0 {
 					continue
 				}
 
-				if cpm > price {
-					if rem >= cpm/1000 {
+				cpm,err :=strconv.ParseFloat(budget.CPM,64)
+				if err!=nil {
+					continue
+				}
+				// skip if budget is less
+				if rem >= cpm/1000 {
+					if cpm > price {
 						price = cpm
 						seat = budget.AdvID
 					}
@@ -256,6 +298,7 @@ func (m *Matcher) EvaluateBidRequest(w http.ResponseWriter, br *BidRequest) *Bid
 				continue
 			}
 		}
+		// add setabid only if price exists
 		if price > 0 {
 			rand := rand.New(rand.NewSource(time.Now().UnixNano()))
 			var bid Bid
@@ -272,34 +315,36 @@ func (m *Matcher) EvaluateBidRequest(w http.ResponseWriter, br *BidRequest) *Bid
 	return &BidResponse{
 		ID: br.ID,
 		SeatBid: seatBids,
-		NBR: -1,
+		NBR: NBR_DEFAULT,
 	}
 }
 
+// retrieve all creatives from postgres
 func (m *Matcher) GetAllCreatives() ([]*utils.Creative, error) {
 	utils.CreativeLock()
 	rows,err := m.pg.Query(context.Background(), utils.ALL_CREATIVES_QUERY)
 	utils.CreativeUnLock()
 	if err!=nil {
-		return nil,fmt.Errorf("Error reading creatives from Postgres : %v",err)
+		return nil,fmt.Errorf("error reading creatives from Postgres : %v",err)
 	}
 	var creatives []*utils.Creative
 	for rows.Next() {
 		var crtv utils.Creative
 		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails, &crtv.AdvertiserID)
 		if err != nil {
-			return nil,fmt.Errorf("Error scanning Creative rows: %v",err)
+			return nil,fmt.Errorf("error scanning Creative rows: %v",err)
 		}
 		// fmt.Println(crtv)
 		creatives = append(creatives,&crtv)
 	}	
 	if err = rows.Err(); err != nil {
-		return nil,fmt.Errorf("Error scanning Creative rows: %v",err)
+		return nil,fmt.Errorf("error scanning Creative rows: %v",err)
 	}
 	defer rows.Close()
 	return  creatives,nil
 }
 
+// create budget map for all AdvertiserIDs
 func (m *Matcher) GetBudgets(bmap map[string]*utils.Budget, creatives []*utils.Creative) {
 	for _,crtv := range creatives {
 		var budget utils.Budget
@@ -312,6 +357,7 @@ func (m *Matcher) GetBudgets(bmap map[string]*utils.Budget, creatives []*utils.C
 	}
 }
 
+// returns a no bid response
 func (m *Matcher) WriteNoBidResponse(w http.ResponseWriter, br *BidRequest, nbr int) {
 	res := BidResponse{
 		ID: br.ID,
@@ -329,13 +375,16 @@ func (m *Matcher) WriteNoBidResponse(w http.ResponseWriter, br *BidRequest, nbr 
 	w.Header().Set("Content-Type","application/json")
 	w.Write(b)
 	m.logger.Print("Response sent with NBR: ",nbr)
+	m.bidresp.Inc()
 	return
 }
 
+// Returns a handler for Prometheus metrics
 func (m *Matcher) Metrics() http.Handler {
 	return promhttp.HandlerFor(m.reg,promhttp.HandlerOpts{})
 }
 
+// Update budget of advertisers for all bids sent
 func (m *Matcher) updateBudget(res BidResponse){
 	controller,_ := utils.NewController(m.pg,m.mc,m.logger)
 	for _,sb := range res.SeatBid {
@@ -350,6 +399,7 @@ func (m *Matcher) updateBudget(res BidResponse){
 	return
 }
 
+// update prometheus metrics
 func (m *Matcher) updateMetrics(res BidResponse){
 	for _,sb := range res.SeatBid {
 		m.bidperadv.WithLabelValues(sb.Seat).Inc()

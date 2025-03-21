@@ -6,9 +6,9 @@ import(
 )
 
 type BidRequest struct {
-	ID string `json:"id"`
-	Imps []*Impression `json:"imps"`
-	At int `json:"at,omitempty"`
+	ID string 
+	Imps []*Impression 
+	At int 
 
 	// Site Detials
 	SiteID string
@@ -24,9 +24,9 @@ type BidRequest struct {
 }
 
 type Impression struct{
-	ID string `json:"id"`
-	TagID string `json"tagid",omitempty`
-	Secure int `json:"secure",omitempty`
+	ID string 
+	TagID string 
+	Secure int 
 	MediaType string 
 	W int
 	H int
@@ -38,9 +38,9 @@ type Media struct{
 }
 
 type Site struct{
-	Id string `json:"id",omitempty`
-	Publisher *Publisher `json:"publisher",omitempty`
-	Domain string `json:"domain",omitempty`
+	Id string 
+	Publisher *Publisher 
+	Domain string 
 }
 
 type Publisher struct{
@@ -63,13 +63,22 @@ type User struct{
 	Id string `json:"id",omitempty`
 }
 
+
+// Validates a bid request
 func (br *BidRequest) validate() error {
 	if br.ID == "" {
 		return fmt.Errorf("Bid request ID is nil")
 	}
 
 	if len(br.Imps)==0 {
-		return fmt.Errorf("No Impressions in Bid request")
+		return fmt.Errorf("no Impressions in Bid request")
+	}
+
+	// check if any impression has missing id
+	for _,imps := range br.Imps {
+		if imps.ID == ""{
+			return fmt.Errorf("impression ID is nil")
+		}
 	}
 
 	return nil

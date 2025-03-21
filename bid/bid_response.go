@@ -1,5 +1,9 @@
 package bid
 
+const (
+	NBR_DEFAULT = -1		// default nbr code
+)
+
 type BidResponse struct {
 	ID 		string			`json:"id"`
 	SeatBid []SeatBid		`json:"seatbid"`

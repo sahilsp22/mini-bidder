@@ -18,7 +18,7 @@ import (
 func main() {
 
 	logger := logger.InitLogger(logger.BIDDER)
-
+	// Get configs
 	mcfg,err := config.GetMcCConfig()
 	if err!=nil {
 		logger.Fatal(err)
@@ -28,9 +28,7 @@ func main() {
 	if err!=nil {
 		logger.Fatal(err)
 	}
-	// mc:=db.GetMcInstance()
 
-	// pg := db.GetPGInstance()
 	pgcfg,err:=config.GetPGConfig()
 	if err != nil {
 		logger.Fatal(err)
@@ -45,11 +43,14 @@ func main() {
 	// if err != nil {
 	// 	logger.Fatal(err)
 	// }
+	
+	// Get a new Matcher to handle requests
 	m := bid.NewMatcher(pg,mc,logger)
 
 	srvr := server.Server{}
 	metricsrv := server.Server{}
 
+	// initiate routes
 	routes := []server.Route{
 		{
 			Path: "/bid",
@@ -67,6 +68,7 @@ func main() {
 	srvr.AddRoutes(routes)
 	metricsrv.AddRoutes(metricroutes)
 
+	// Start metric and bidder servers
 	go func(){
 		metricsrv.Listen(config.METRICS_SERVER_PORT)
 		// logger.Print("Metrics server listening on port : ",8080)

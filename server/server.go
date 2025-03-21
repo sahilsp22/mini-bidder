@@ -14,6 +14,7 @@ func init() {
 	srvlog = logger.InitLogger(logger.SERVER)
 }
 
+// server and handler for a Server
 type Server struct{
 	srvr http.Server
 	handler http.Handler
@@ -24,6 +25,7 @@ type Route struct{
 	Handler http.HandlerFunc
 }
 
+// Adds routes to the server
 func (s *Server) AddRoutes(routes []Route) {
 	mux := http.NewServeMux()
 
@@ -34,6 +36,7 @@ func (s *Server) AddRoutes(routes []Route) {
 	s.handler = mux
 }
 
+// Starts a server on the port and listens
 func (s *Server) Listen(port int){
 	p:=fmt.Sprintf(":%v",port)
 	s.srvr = http.Server{

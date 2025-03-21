@@ -27,6 +27,7 @@ func init() {
 	mclog = logger.InitLogger(logger.MEMCACHE)
 }
 
+// Geneates a Mcache client
 func NewMcClient(cfg *config.Memcache) (*MCacheClient, error) {
 	mc := memcache.New(fmt.Sprintf("%s:%s",cfg.Host,cfg.Port))
 	mclog.Print("Connected to Memcache")
@@ -35,6 +36,7 @@ func NewMcClient(cfg *config.Memcache) (*MCacheClient, error) {
 	return &MCacheClient{cl:mc},nil
 }
 
+// Sets key value pair in cache
 func (mc *MCacheClient) Set(key string, value interface{}) error {
 
 	bs,err:=json.Marshal(value)
@@ -54,6 +56,7 @@ func (mc *MCacheClient) Set(key string, value interface{}) error {
 	return nil
 }
 
+// retrieves a value from cache
 func (mc *MCacheClient) Get(key string,s interface{}) (error) {
 	item, err := mc.cl.Get(key)
 	if err != nil {
@@ -78,10 +81,12 @@ func (mc *MCacheClient) Get(key string,s interface{}) (error) {
 func (mc *MCacheClient) Close() error{
 	err := mc.cl.Close()
 	if err!=nil {
-		return fmt.Errorf("Client closed with error: %v", err)
+		return fmt.Errorf("mcache client closed with error: %v", err)
 	}
 	return nil
 }
+
+
 
 // func (mc *MCacheClient) Lock() {
 // 	mu.Lock()

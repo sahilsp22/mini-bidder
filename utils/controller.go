@@ -46,6 +46,7 @@ func init() {
 	bdgtLock = &sync.RWMutex{}
 }
 
+// returns a controller with required connections
 func NewController(pg *db.PgClient, mc *db.MCacheClient, logger *logger.Logger) (*Controller,error) {
 
 	controller := &Controller{
@@ -62,6 +63,7 @@ func NewController(pg *db.PgClient, mc *db.MCacheClient, logger *logger.Logger) 
 // 	return controller
 // }
 
+// Start tickers for updating
 func (c *Controller) Start() {
 
 	// logger:=logger.InitLogger(logger.CONTROLLER)
@@ -107,23 +109,24 @@ func (c *Controller) Start() {
 	return
 }
 
+// Cache creatives from Postgres to mcache
 func (c *Controller) updateCreatives() error{
 	rows,err := c.pg.Query(context.Background(), ALL_CREATIVES_QUERY)
 	if err!=nil {
-		return fmt.Errorf("Error reading creatives: %v",err)
+		return fmt.Errorf("error reading creatives: %v",err)
 	}
 	var Creatives []*Creative
 	for rows.Next() {
 		var crtv Creative
 		err = rows.Scan(&crtv.AdID, &crtv.Height, &crtv.Width, &crtv.AdType, &crtv.CreativeDetails, &crtv.AdvertiserID)
 		if err != nil {
-			return fmt.Errorf("Error scanning Creative rows: %v",err)
+			return fmt.Errorf("error scanning Creative rows: %v",err)
 		}
 		// fmt.Println(crtv)
 		Creatives = append(Creatives,&crtv)
 	}	
 	if err = rows.Err(); err != nil {
-		return fmt.Errorf("Error scanning Creative rows: %v",err)
+		return fmt.Errorf("error scanning Creative rows: %v",err)
 	}
 	rows.Close()
 	
@@ -136,14 +139,10 @@ func (c *Controller) updateCreatives() error{
 	}
 	crtvLock.Unlock()
 	return nil
-	// var crtv config.Creative
-	// err = mc.Get("adtest3",&crtv)
-	// if err!=nil{
-	// 	logger.GetLogger(logger.CONTROLLER).Print(err)
-	// }
-	// fmt.Println(crtv)
+
 }
 
+// Cache advertiser budgets from Postgres to mcache
 func (c *Controller) updateAdvertisers() error {
 
 	bdgtLock.RLock()
@@ -151,7 +150,7 @@ func (c *Controller) updateAdvertisers() error {
 	bdgtLock.RUnlock()
 
 	if err!=nil {
-		return fmt.Errorf("Error scanning Budget rows: %v",err)
+		return fmt.Errorf("error scanning Budget rows: %v",err)
 	}
 
 	var Budgets []*Budget
@@ -159,13 +158,13 @@ func (c *Controller) updateAdvertisers() error {
 		var bdgt Budget
 		err = rows.Scan(&bdgt.AdvID, &bdgt.Budget, &bdgt.CPM, &bdgt.RemBudget)
 		if err != nil {
-			return fmt.Errorf("Error scanning Budget rows: %v",err)
+			return fmt.Errorf("error scanning Budget rows: %v",err)
 		}
 		// fmt.Println(bdgt)
 		Budgets = append(Budgets,&bdgt)
 	}
 	if err = rows.Err(); err != nil {
-		return fmt.Errorf("Error scanning Budget rows: %v",err)
+		return fmt.Errorf("error scanning Budget rows: %v",err)
 	}
 	rows.Close()
 	
@@ -178,15 +177,10 @@ func (c *Controller) updateAdvertisers() error {
 		}
 	}
 
-	// var b Budget
-	// err = c.mc.Get("advtest1",&b)
-	// if err!=nil{
-	// 	return fmt.Errorf("Error getting Budget: %v",err)
-	// }
-	// fmt.Println(b)
 	return nil
 }
 
+// Update advertiser budget for sent bids
 func (c *Controller) UpdateAdvBudget(AdvID string) (error) {
 	// fmt.Println("updating....")
 	bdgtLock.Lock()
@@ -194,7 +188,7 @@ func (c *Controller) UpdateAdvBudget(AdvID string) (error) {
     query := UPDATE_ADV_BUDGET_QUERY
     err := c.pg.Exec(context.Background(), query, AdvID)
 	if err!=nil {
-		return fmt.Errorf("Error updating Budget: AdvID: %v : %v",AdvID,err)
+		return fmt.Errorf("error updating Budget: AdvID: %v : %v",AdvID,err)
 	}
 	
 	go func() error {

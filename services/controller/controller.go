@@ -16,6 +16,7 @@ func main() {
 
 	cntlog := logger.InitLogger(logger.CONTROLLER)
 
+	// Load configs
 	cfg,err := config.GetPGConfig()
 	if err!=nil {
 		cntlog.Fatal(err)
@@ -31,19 +32,19 @@ func main() {
 	if err!=nil {
 		cntlog.Fatal(err)
 	}
-	// fmt.Println(mc)
 
 	pg,err := db.NewClient(cfg)
 	if err!=nil {
 		cntlog.Fatal(err)
 	}
-	// fmt.Println(pg)
 
+	// Get controller client
 	controller,err := utils.NewController(pg,mc,cntlog)
 	if err!=nil {
 		cntlog.Fatal(err)
 	}
 
+	// Start controller
 	controller.Start()
 
 	defer pg.Close()
