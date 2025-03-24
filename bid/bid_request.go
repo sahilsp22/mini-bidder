@@ -37,6 +37,29 @@ type Media struct{
 	H int `json:"h"`
 }
 
+// Validates a bid request
+func (br *BidRequest) validate() error {
+	if br.ID == "" {
+		return fmt.Errorf("Bid request ID is nil")
+	}
+	
+	if len(br.Imps)==0 {
+		return fmt.Errorf("no Impressions in Bid request")
+	}
+	
+	// check if any impression has missing id
+	for _,imps := range br.Imps {
+		if imps.ID == ""{
+			return fmt.Errorf("impression ID is nil")
+		}
+	}
+	
+	return nil
+}
+
+
+
+
 type Site struct{
 	Id string 
 	Publisher *Publisher 
@@ -44,42 +67,21 @@ type Site struct{
 }
 
 type Publisher struct{
-	Id string `json:"id",omitempty`
-	Name string `json:"name",omitempty`
+	Id string 
+	Name string 
 }
 
 type Device struct{
-	Geo *Geo `json:"geo",omitempty`
-	DeviceType int `json:"devicetype",omitempty`
-	User *User `json:"user",omitempty`
+	Geo *Geo 
+	DeviceType int 
+	User *User 
 }
 
 type Geo struct{
-	Country string `json:"country",omitempty`
-	Region string `json:"region",omitempty`
+	Country string 
+	Region string 
 }
 
 type User struct{
-	Id string `json:"id",omitempty`
-}
-
-
-// Validates a bid request
-func (br *BidRequest) validate() error {
-	if br.ID == "" {
-		return fmt.Errorf("Bid request ID is nil")
-	}
-
-	if len(br.Imps)==0 {
-		return fmt.Errorf("no Impressions in Bid request")
-	}
-
-	// check if any impression has missing id
-	for _,imps := range br.Imps {
-		if imps.ID == ""{
-			return fmt.Errorf("impression ID is nil")
-		}
-	}
-
-	return nil
+	Id string 
 }

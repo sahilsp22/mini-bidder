@@ -3,6 +3,7 @@
 *.conf
 *secrets*.yaml
 query.go
+dump.txt
 
 # IDE and Editor Files
 .vscode/
