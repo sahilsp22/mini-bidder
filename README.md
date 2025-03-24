@@ -6,6 +6,9 @@
 ### Bidder: 
 - Exposes endpoints to accept Bid requests processes them with data from cache and responds with appropriate bids in bid eresponse
 
+### Diagram
+<iframe style="border:none" width="800" height="450" src="https://whimsical.com/embed/SNYMqU34BtLRxqREXyp5Nm"></iframe>
+
 The Services folder contains the main Bidder and Controller services that run in parallel
 
 ## Helpers:
