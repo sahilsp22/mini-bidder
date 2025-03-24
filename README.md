@@ -7,7 +7,7 @@
 - Exposes endpoints to accept Bid requests processes them with data from cache and responds with appropriate bids in bid eresponse
 
 ### Diagram
-<img style="border:none" width="800" height="450" src="https://whimsical.com/embed/SNYMqU34BtLRxqREXyp5Nm"></img>
+![Block diagram Mini Bidder](https://whimsical.com/mini-bidder-SNYMqU34BtLRxqREXyp5Nm)
 
 The Services folder contains the main Bidder and Controller services that run in parallel
 
